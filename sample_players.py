@@ -163,7 +163,6 @@ class GreedyPlayer():
             for the current game state; may return (-1, -1) if there are no
             legal moves.
         """
-
         if not legal_moves:
             return (-1, -1)
         _, move = max([(self.score(game.forecast_move(m), self), m) for m in legal_moves])
