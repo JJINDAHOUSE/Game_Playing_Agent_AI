@@ -7,7 +7,7 @@ You must test your agent's strength against a set of agents with known
 relative strength using tournament.py and include the results in your report.
 """
 import random
-
+import logging
 
 class Timeout(Exception):
     """Subclass base exception for code clarity."""
@@ -38,7 +38,21 @@ def custom_score(game, player):
     """
 
     # TODO: finish this function!
-    raise NotImplementedError
+    if game.is_loser(player):
+    	return float("-inf")
+
+    if game.is_winner(player):
+    	return float("inf")
+
+    own_moves = len(game.get_legal_moves(player))
+    opp_moves = len(game.get_legal_moves(game.get_opponent(player)))
+    blank_moves = len(game.get_blank_spaces())
+    filled_moves = 49 - blank_moves
+    own_x, own_y = game.get_player_location(player)
+    opp_x, opp_y = game.get_player_location(game.get_opponent(player))
+    dx = abs(own_x - opp_x)
+    dy = abs(own_y - opp_y)
+    return blank_moves / 49 * (own_moves - 1.2 * opp_moves) * filled_moves + filled_moves / 49 * 1.1 * (dx + dy)
 
 
 class CustomPlayer:
@@ -133,14 +147,16 @@ class CustomPlayer:
             else:
             	search_method = self.alphabeta
 
+            # iterative deepening
             if self.iterative:
             	depth = 0
             	while self.iterative:
             		_, current_best_move = search_method(game, depth)
             		depth += 1
+
+            # fixed depth search
             else:
             	_, current_best_move = search_method(game, self.search_depth)
-            # pass
 
         except Timeout:
             # Handle any actions required at timeout, if necessary
@@ -186,21 +202,23 @@ class CustomPlayer:
         # TODO: finish this function!
         legal_moves = game.get_legal_moves()
 
+        # Base case for root node or no legal moves for a player
         if depth == 0 or not legal_moves:
         	return self.score(game, self), (-1, -1)
 
+        # Max level
         if maximizing_player:
         	v = float("-inf")
-        	best_move = None
+        	best_move = None 
         	for a in legal_moves:
-        		new_game = game.forecast_move(a)
+        		new_game = game.forecast_move(a)  # apply move a to the board
         		score, _ = self.minimax(new_game, depth-1, False)
-        		if score > v:
-        			v = score
-        			best_move = a
+        		if score > v:  # replace v if when score is greater than current
+        			v = score  # max value v
+        			best_move = a  # remember the arg max a
         	return v, best_move
 
-        else:
+        else:  # Min level
         	v = float("inf")
         	best_move = None
         	for a in legal_moves:
@@ -267,21 +285,21 @@ class CustomPlayer:
         		if score > v:
         			v = score
         			best_move = a
-        		if v >= beta:
+        		if v >= beta:  # Prune tree when v >= best available min value
         			return v, best_move
-        		alpha = max(alpha, v)
+        		alpha = max(alpha, v)  # replace best available max value
         	return v, best_move
 
         else:
         	v = float('inf')
-        	bst_move = None
+        	best_move = None
         	for a in legal_moves:
         		new_game = game.forecast_move(a)
         		score, _ = self.alphabeta(new_game, depth-1, alpha, beta, True)
         		if score < v:
         			v = score
         			best_move = a
-        		if v <= alpha:
+        		if v <= alpha:  # Prune tree when v <= best available max value
         			return v, best_move
-        		beta = min(beta, v)
+        		beta = min(beta, v)  # replace best available min value
         	return v, best_move 
